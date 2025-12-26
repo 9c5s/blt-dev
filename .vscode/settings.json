@@ -1,0 +1,9 @@
+{
+	"files.associations": {
+		"*.blt": "clojure"
+	},
+	"[clojure]": {
+		"editor.defaultFormatter": "betterthantomorrow.calva",
+		"editor.formatOnSave": true
+	}
+}
