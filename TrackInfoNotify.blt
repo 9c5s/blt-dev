@@ -2,64 +2,43 @@
  :triggers [{:enabled "Always"
              :players #beat_link_trigger.util.PlayerChoice{:number 1}
              :comment "Attributes for Player 1"
-             :expressions {:tracked "(let [info (or track-title \"[no track]\")]
-                                       (when (not= (:last-info @locals) info)
-                                         (when-let [notify-fn (:notify-and-copy @globals)]
-                                           (notify-fn info))
-                                         (swap! locals assoc :last-info info)))"}}
+             :expressions {:tracked "((:check-and-notify @globals) locals track-title)"}}
             {:enabled "Always"
              :players #beat_link_trigger.util.PlayerChoice{:number 2}
              :comment "Attributes for Player 2"
-             :expressions {:tracked "(let [info (or track-title \"[no track]\")]
-                                       (when (not= (:last-info @locals) info)
-                                         (when-let [notify-fn (:notify-and-copy @globals)]
-                                           (notify-fn info))
-                                         (swap! locals assoc :last-info info)))"}}
+             :expressions {:tracked "((:check-and-notify @globals) locals track-title)"}}
             {:enabled "Always"
              :players #beat_link_trigger.util.PlayerChoice{:number 3}
              :comment "Attributes for Player 3"
-             :expressions {:tracked "(let [info (or track-title \"[no track]\")]
-                                       (when (not= (:last-info @locals) info)
-                                         (when-let [notify-fn (:notify-and-copy @globals)]
-                                           (notify-fn info))
-                                         (swap! locals assoc :last-info info)))"}}
+             :expressions {:tracked "((:check-and-notify @globals) locals track-title)"}}
             {:enabled "Always"
              :players #beat_link_trigger.util.PlayerChoice{:number 4}
              :comment "Attributes for Player 4"
-             :expressions {:tracked "(let [info (or track-title \"[no track]\")]
-                                       (when (not= (:last-info @locals) info)
-                                         (when-let [notify-fn (:notify-and-copy @globals)]
-                                           (notify-fn info))
-                                         (swap! locals assoc :last-info info)))"}}
+             :expressions {:tracked "((:check-and-notify @globals) locals track-title)"}}
             {:enabled "Always"
              :players #beat_link_trigger.util.PlayerChoice{:number 5}
              :comment "Attributes for Player 5"
-             :expressions {:tracked "(let [info (or track-title \"[no track]\")]
-                                       (when (not= (:last-info @locals) info)
-                                         (when-let [notify-fn (:notify-and-copy @globals)]
-                                           (notify-fn info))
-                                         (swap! locals assoc :last-info info)))"}}
+             :expressions {:tracked "((:check-and-notify @globals) locals track-title)"}}
             {:enabled "Always"
              :players #beat_link_trigger.util.PlayerChoice{:number 6}
              :comment "Attributes for Player 6"
-             :expressions {:tracked "(let [info (or track-title \"[no track]\")]
-                                       (when (not= (:last-info @locals) info)
-                                         (when-let [notify-fn (:notify-and-copy @globals)]
-                                           (notify-fn info))
-                                         (swap! locals assoc :last-info info)))"}}]
- :expressions {:setup "(swap! globals assoc :notify-and-copy
-                        (fn [info]
-                          (try
-                            (let [clipboard (.getSystemClipboard (java.awt.Toolkit/getDefaultToolkit))
-                                  selection (java.awt.datatransfer.StringSelection. info)]
-                              (.setContents clipboard selection selection))
-                            (catch Exception e
-                              (.printStackTrace e)))
-                          (try
-                            (let [runtime (Runtime/getRuntime)
-                                  escaped-info (clojure.string/replace info \"\\\"\" \"\\\\\\\"\")
-                                  script (str \"display notification \\\"\" escaped-info \"\\\" with title \\\"Now Playing\\\" sound name \\\"default\\\"\")]
-                              (.exec runtime (into-array String [\"osascript\" \"-e\" script])))
-                            (catch Exception e
-                              (.printStackTrace e)))))"
-               :shutdown "(swap! globals dissoc :notify-and-copy)"}}
+             :expressions {:tracked "((:check-and-notify @globals) locals track-title)"}}]
+ :expressions {:setup "(swap! globals assoc :check-and-notify
+                        (fn [locals track-title]
+                          (let [info (or track-title \"[no track]\")]
+                            (when (not= (:last-info @locals) info)
+                              (try
+                                (let [clipboard (.getSystemClipboard (java.awt.Toolkit/getDefaultToolkit))
+                                      selection (java.awt.datatransfer.StringSelection. info)]
+                                  (.setContents clipboard selection selection))
+                                (catch Exception e
+                                  (.printStackTrace e)))
+                              (try
+                                (let [runtime (Runtime/getRuntime)
+                                      escaped-info (clojure.string/replace info \"\\\"\" \"\\\\\\\"\")
+                                      script (str \"display notification \\\"\" escaped-info \"\\\" with title \\\"Now Playing\\\" sound name \\\"default\\\"\")]
+                                  (.exec runtime (into-array String [\"osascript\" \"-e\" script])))
+                                (catch Exception e
+                                  (.printStackTrace e)))
+                              (swap! locals assoc :last-info info)))))"
+               :shutdown "(swap! globals dissoc :check-and-notify)"}}
