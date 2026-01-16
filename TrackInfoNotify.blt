@@ -23,22 +23,41 @@
              :players #beat_link_trigger.util.PlayerChoice{:number 6}
              :comment "Attributes for Player 6"
              :expressions {:tracked "((:check-and-notify @globals) locals track-title)"}}]
- :expressions {:setup "(swap! globals assoc :check-and-notify
-                        (fn [locals track-title]
-                          (let [info (or track-title \"[no track]\")]
-                            (when (not= (:last-info @locals) info)
-                              (try
-                                (let [clipboard (.getSystemClipboard (java.awt.Toolkit/getDefaultToolkit))
-                                      selection (java.awt.datatransfer.StringSelection. info)]
-                                  (.setContents clipboard selection selection))
-                                (catch Exception e
-                                  (.printStackTrace e)))
-                              (try
-                                (let [runtime (Runtime/getRuntime)
-                                      escaped-info (clojure.string/replace info \"\\\"\" \"\\\\\\\"\")
-                                      script (str \"display notification \\\"\" escaped-info \"\\\" with title \\\"Now Playing\\\" sound name \\\"default\\\"\")]
-                                  (.exec runtime (into-array String [\"osascript\" \"-e\" script])))
-                                (catch Exception e
-                                  (.printStackTrace e)))
-                              (swap! locals assoc :last-info info)))))"
-               :shutdown "(swap! globals dissoc :check-and-notify)"}}
+ :expressions {:setup "(do
+                        (try
+                          (when (java.awt.SystemTray/isSupported)
+                            (let [tray (java.awt.SystemTray/getSystemTray)
+                                  ui-icon (javax.swing.UIManager/getIcon \"OptionPane.informationIcon\")
+                                  image (java.awt.image.BufferedImage. (.getIconWidth ui-icon) (.getIconHeight ui-icon) java.awt.image.BufferedImage/TYPE_INT_ARGB)
+                                  g (.getGraphics image)
+                                  _ (.paintIcon ui-icon nil g 0 0)
+                                  _ (.dispose g)
+                                  icon (java.awt.TrayIcon. image \"Now Playing\")]
+                              (.setImageAutoSize icon true)
+                              (.add tray icon)
+                              (swap! globals assoc :tray-icon icon)))
+                          (catch Exception e (.printStackTrace e)))
+                        (swap! globals assoc :check-and-notify
+                               (fn [locals track-title]
+                                 (let [info (or track-title \"[no track]\")]
+                                   (when (not= (:last-info @locals) info)
+                                     (try
+                                       (let [clipboard (.getSystemClipboard (java.awt.Toolkit/getDefaultToolkit))
+                                             selection (java.awt.datatransfer.StringSelection. info)]
+                                         (.setContents clipboard selection selection))
+                                       (catch Exception e
+                                         (.printStackTrace e)))
+                                     (try
+                                       (when-let [icon (:tray-icon @globals)]
+                                         (.displayMessage icon \"Now Playing\" info java.awt.TrayIcon$MessageType/INFO))
+                                       (catch Exception e
+                                         (.printStackTrace e)))
+                                     (swap! locals assoc :last-info info))))))"
+               :shutdown "(do
+                             (try
+                               (when (and (java.awt.SystemTray/isSupported)
+                                          (some? (:tray-icon @globals)))
+                                 (let [icon (:tray-icon @globals)]
+                                   (.remove (java.awt.SystemTray/getSystemTray) icon)))
+                               (catch Exception e (.printStackTrace e)))
+                             (swap! globals dissoc :check-and-notify :tray-icon))"}}
